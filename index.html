@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuickPrint — Xerox Printing</title>
+<style>
+:root{--ink:#172033;--muted:#667085;--blue:#2457d6;--line:#e4e8f0;--bg:#f5f7fb;--white:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(120deg,#173b9a,#3268ed);color:#fff;padding:25px 18px}
+.wrap{max-width:850px;margin:auto}header h1{margin:0;font-size:28px}header p{margin:6px 0 0;color:#e6edff}
+main{max-width:850px;margin:20px auto;padding:0 14px 35px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 3px 12px #18264a08}
+h2{font-size:17px;margin:0 0 14px}.field{margin:12px 0}label{display:block;font-size:13px;font-weight:700;margin-bottom:7px;color:#39445a}
+select,input{font:inherit;width:100%;padding:11px 12px;border:1px solid #cfd6e4;border-radius:10px;background:#fff;color:var(--ink)}
+input[type=file]{padding:10px} .choices{display:flex;gap:10px;flex-wrap:wrap}.choice{flex:1;min-width:110px;border:1px solid #cfd6e4;border-radius:10px;padding:11px;display:flex;gap:8px;align-items:center}.choice input{width:auto}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.total{display:flex;justify-content:space-between;align-items:center;background:#eef3ff;padding:15px;border-radius:12px;margin-top:12px}.total strong{font-size:25px;color:#1747bf}
+button{border:0;border-radius:11px;background:var(--blue);color:white;padding:13px 16px;font:inherit;font-weight:700;width:100%;cursor:pointer;margin-top:12px}button:disabled{opacity:.5;cursor:not-allowed}
+.small{font-size:12px;color:var(--muted);line-height:1.5}.status{margin-top:12px;background:#f0f8f2;border:1px solid #c9e8d0;padding:12px;border-radius:10px;display:none;overflow-wrap:anywhere}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:8px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}header h1{font-size:24px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>🖨️ QuickPrint</h1><p>Upload your document. Choose a shop. Print with ease.</p></div></header>
+<main>
+<section class="panel">
+<h2>1. Choose a print shop</h2>
+<div class="field"><label for="shop">Available shops</label><select id="shop"></select></div>
+<p class="small" id="shopInfo"></p>
+</section>
+<section class="panel">
+<h2>2. Upload your document</h2>
+<div class="field"><label for="file">Select a PDF or document</label><input id="file" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"></div>
+<p class="small">Demo note: This prototype calculates an estimate in your browser. It does not send the file to a shop yet.</p>
+</section>
+<section class="panel">
+<h2>3. Printing options</h2>
+<div class="field"><label>Print type</label><div class="choices">
+<label class="choice"><input type="radio" name="color" value="bw" checked> Black &amp; White</label>
+<label class="choice"><input type="radio" name="color" value="color"> Colour</label>
+</div></div>
+<div class="field"><label>Paper size</label><div class="choices">
+<label class="choice"><input type="radio" name="paper" value="A4" checked> A4</label>
+<label class="choice"><input type="radio" name="paper" value="A3"> A3</label>
+</div></div>
+<div class="grid">
+<div class="field"><label for="pages">Pages per copy</label><input id="pages" type="number" min="1" value="1"></div>
+<div class="field"><label for="copies">Number of copies</label><input id="copies" type="number" min="1" value="1"></div>
+</div>
+<div class="total"><span>Estimated total</span><strong id="total">₹2.00</strong></div>
+<p class="small" id="rateText"></p>
+<button id="order">Review print request</button>
+<div class="status" id="status" role="status"></div>
+</section>
+<footer>QuickPrint Web Prototype · Sample rates only · No payment or order submission yet</footer>
+</main>
+<script>
+const shops = [
+ {id:"shop1",name:"QuickPrint Central",area:"Sample shop · Central",rates:{bw:{A4:2,A3:4},color:{A4:10,A3:18}}},
+ {id:"shop2",name:"Sri Sai Xerox",area:"Sample shop · Market Road",rates:{bw:{A4:1.5,A3:3},color:{A4:8,A3:15}}},
+ {id:"shop3",name:"Metro Copy Point",area:"Sample shop · Metro Station",rates:{bw:{A4:2.5,A3:5},color:{A4:12,A3:20}}}
+];
+const $=id=>document.getElementById(id);
+const params=new URLSearchParams(location.search);
+const shopSelect=$("shop");
+shops.forEach(s=>{const o=document.createElement("option");o.value=s.id;o.textContent=s.name;shopSelect.appendChild(o)});
+if(params.get("shop") && shops.some(s=>s.id===params.get("shop"))) shopSelect.value=params.get("shop");
+function picked(name){return document.querySelector(`input[name="${name}"]:checked`).value}
+function currentShop(){return shops.find(s=>s.id===shopSelect.value)}
+function update(){
+ const s=currentShop(),color=picked("color"),paper=picked("paper");
+ const pages=Math.max(1,parseInt($("pages").value)||1),copies=Math.max(1,parseInt($("copies").value)||1);
+ const rate=s.rates[color][paper],amount=rate*pages*copies;
+ $("total").textContent="₹"+amount.toFixed(2);
+ $("shopInfo").textContent=s.area+" · Rates are sample values and can be changed for each shop.";
+ $("rateText").textContent=`Rate: ₹${rate.toFixed(2)} per page · ${color==="bw"?"Black & White":"Colour"} · ${paper}`;
+}
+["shop","pages","copies"].forEach(id=>$(id).addEventListener("input",update));
+document.querySelectorAll('input[name="color"],input[name="paper"]').forEach(el=>el.addEventListener("change",update));
+$("order").addEventListener("click",()=>{
+ const file=$("file").files[0],s=currentShop();
+ const color=picked("color"),paper=picked("paper");
+ const pages=Math.max(1,parseInt($("pages").value)||1),copies=Math.max(1,parseInt($("copies").value)||1);
+ const rate=s.rates[color][paper],amount=rate*pages*copies;
+ $("status").style.display="block";
+ $("status").innerHTML=`<strong>Request summary</strong><br>Shop: ${s.name}<br>File: ${file?file.name:"No file selected"}<br>Print: ${color==="bw"?"Black & White":"Colour"} · ${paper}<br>Pages per copy: ${pages} · Copies: ${copies}<br><strong>Estimated price: ₹${amount.toFixed(2)}</strong><br><span class="small">This is a demo review only. Online order sending will be added in a later step.</span>`;
+});
+update();
+</script>
+</body>
+</html>
